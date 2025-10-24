@@ -133,11 +133,12 @@ export function extractTermsChunked(
 }
 
 /**
- * Apply RTL formatting by reversing the text character-by-character
- * Unity game engine displays Persian text correctly only when characters are reversed
+ * Apply RTL formatting with Unicode presentation forms
+ * Converts Persian/Arabic text to isolated forms and reverses only the text segments
+ * Preserves punctuation and special characters in their original positions
  */
 export function applyRTLFormatting(text: string): string {
-  // Normalize Arabic characters first
+  // Normalize Arabic characters to Persian equivalents
   const normalizedMap: Record<string, string> = {
     'ك': 'ک',
     'ي': 'ی',
@@ -147,14 +148,65 @@ export function applyRTLFormatting(text: string): string {
     'ؤ': 'و',
   };
   
-  const normalized = text.replace(/./g, (char) => normalizedMap[char] || char);
+  // Mapping Persian/Arabic characters to their Unicode isolated presentation forms
+  const presentationForms: Record<string, string> = {
+    'ا': '\uFE8D', 'آ': '\uFE81', 'ب': '\uFE8F', 'پ': '\uFB56',
+    'ت': '\uFE95', 'ث': '\uFE99', 'ج': '\uFE9D', 'چ': '\uFB7A',
+    'ح': '\uFEA1', 'خ': '\uFEA5', 'د': '\uFEA9', 'ذ': '\uFEAB',
+    'ر': '\uFEAD', 'ز': '\uFEAF', 'ژ': '\uFB8A', 'س': '\uFEB1',
+    'ش': '\uFEB5', 'ص': '\uFEB9', 'ض': '\uFEBD', 'ط': '\uFEC1',
+    'ظ': '\uFEC5', 'ع': '\uFEC9', 'غ': '\uFECD', 'ف': '\uFED1',
+    'ق': '\uFED5', 'ک': '\uFED9', 'گ': '\uFB92', 'ل': '\uFEDD',
+    'م': '\uFEE1', 'ن': '\uFEE5', 'و': '\uFEED', 'ه': '\uFEEB',
+    'ی': '\uFEF1', 'ئ': '\uFE89',
+  };
   
-  // Reverse the string character-by-character for Unity
-  // This makes "سلام" become "مالس"
-  const reversed = Array.from(normalized).reverse().join('');
+  // First normalize the text
+  let normalized = text;
+  for (const [arabic, persian] of Object.entries(normalizedMap)) {
+    normalized = normalized.replace(new RegExp(arabic, 'g'), persian);
+  }
   
-  // Add RTL embedding character
-  return `${RTL_EMBEDDING}${reversed}`;
+  // Split text into segments: Persian/Arabic letters vs other characters
+  const segments: Array<{ text: string; isPersian: boolean }> = [];
+  let currentSegment = '';
+  let isPersianSegment = false;
+  
+  for (const char of normalized) {
+    const isPersianChar = /[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char);
+    
+    if (currentSegment === '') {
+      currentSegment = char;
+      isPersianSegment = isPersianChar;
+    } else if (isPersianChar === isPersianSegment) {
+      currentSegment += char;
+    } else {
+      segments.push({ text: currentSegment, isPersian: isPersianSegment });
+      currentSegment = char;
+      isPersianSegment = isPersianChar;
+    }
+  }
+  
+  if (currentSegment) {
+    segments.push({ text: currentSegment, isPersian: isPersianSegment });
+  }
+  
+  // Process each segment
+  const processed = segments.map(segment => {
+    if (!segment.isPersian) {
+      return segment.text; // Keep non-Persian text as is
+    }
+    
+    // Convert Persian characters to presentation forms and reverse
+    const converted = Array.from(segment.text)
+      .map(char => presentationForms[char] || char)
+      .reverse()
+      .join('');
+    
+    return converted;
+  }).join('');
+  
+  return processed;
 }
 
 /**
