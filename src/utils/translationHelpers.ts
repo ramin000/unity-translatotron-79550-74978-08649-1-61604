@@ -167,12 +167,22 @@ export function applyRTLFormatting(text: string): string {
     normalized = normalized.replace(new RegExp(arabic, 'g'), persian);
   }
   
-  // Split text into segments: Persian/Arabic letters vs other characters
+  // Convert ALL characters to presentation forms first
+  let withPresentationForms = '';
+  for (const char of normalized) {
+    if (presentationForms[char]) {
+      withPresentationForms += presentationForms[char];
+    } else {
+      withPresentationForms += char;
+    }
+  }
+  
+  // Now split into segments: Persian/Arabic letters vs other characters
   const segments: Array<{ text: string; isPersian: boolean }> = [];
   let currentSegment = '';
   let isPersianSegment = false;
   
-  for (const char of normalized) {
+  for (const char of withPresentationForms) {
     const isPersianChar = /[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char);
     
     if (currentSegment === '') {
@@ -191,19 +201,14 @@ export function applyRTLFormatting(text: string): string {
     segments.push({ text: currentSegment, isPersian: isPersianSegment });
   }
   
-  // Process each segment
+  // Process each segment: reverse only Persian segments
   const processed = segments.map(segment => {
     if (!segment.isPersian) {
-      return segment.text; // Keep non-Persian text as is
+      return segment.text; // Keep non-Persian text as is (like * or spaces)
     }
     
-    // Convert Persian characters to presentation forms and reverse
-    const converted = Array.from(segment.text)
-      .map(char => presentationForms[char] || char)
-      .reverse()
-      .join('');
-    
-    return converted;
+    // Reverse Persian segment (already in presentation forms)
+    return Array.from(segment.text).reverse().join('');
   }).join('');
   
   return processed;
