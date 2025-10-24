@@ -563,7 +563,9 @@ export default function Index() {
         {/* Untranslated items section */}
         {extractedData.length > 0 && translationMap.size > 0 && (
           (() => {
-            const untranslated = extractedData.filter(item => !translationMap.has(item.term));
+            const untranslated = extractedData.filter(item => 
+              !translationMap.has(item.term) && item.originalText.trim().length > 0
+            );
             if (untranslated.length > 0) {
               return (
                 <div className="mt-6 bg-red-500/10 backdrop-blur-xl rounded-2xl p-6 border border-red-500/30">
@@ -599,7 +601,7 @@ export default function Index() {
 
         {/* Virtualized preview - limited to 50 items for performance */}
         {filteredData.length > 0 && (
-          <div className="mt-6" ref={containerRef}>
+          <div className="mt-6">
             <VirtualizedPreview
               data={filteredData.slice(0, 50)}
               translationMap={translationMap}
