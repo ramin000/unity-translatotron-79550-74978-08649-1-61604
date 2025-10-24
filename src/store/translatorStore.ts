@@ -4,6 +4,7 @@ export interface ExtractedItem {
   term: string;
   originalText: string;
   dataLineIndex?: number;
+  linePrefix?: string;
 }
 
 interface TranslatorState {

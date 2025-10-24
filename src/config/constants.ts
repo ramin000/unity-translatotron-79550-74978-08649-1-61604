@@ -9,9 +9,9 @@ export const CONFIG = {
 } as const;
 
 export const REGEX = {
-  TERM: /string\s+Term\s*=\s*"([^"]+)"/,
-  DATA: /string\s+data\s*=\s*"(.*)"/,
-  BRACKET: /^\s*\[(\d+)\]/,
+  TERM: /string Term = "([^"]+)"/,
+  BRACKET: /\[(\d+)\]/,
+  DATA: /(\s*)(\d+\s+)?string data = "([^"]*)"/,
   BOM: /^\uFEFF/,
 } as const;
 

@@ -54,8 +54,9 @@ export function extractTermsChunked(
               if (nextLine) {
                 const dataMatch = nextLine.match(REGEX.DATA);
                 if (dataMatch) {
-                  currentTerm.originalText = dataMatch[1];
+                  currentTerm.originalText = dataMatch[3]; // Text is now in group 3
                   currentTerm.dataLineIndex = i + 1;
+                  currentTerm.linePrefix = (dataMatch[1] || '') + (dataMatch[2] || ''); // Store prefix with number
                   isFound = true;
                 }
               }
@@ -107,8 +108,9 @@ export function extractTermsChunked(
             if (nextLine) {
               const dataMatch = nextLine.match(REGEX.DATA);
               if (dataMatch) {
-                currentTerm.originalText = dataMatch[1];
+                currentTerm.originalText = dataMatch[3];
                 currentTerm.dataLineIndex = i + 1;
+                currentTerm.linePrefix = (dataMatch[1] || '') + (dataMatch[2] || '');
                 isFound = true;
               }
             }
@@ -261,10 +263,9 @@ export function applyTranslations(
   data.forEach((item) => {
     const translation = translationMap.get(item.term);
     if (translation && item.dataLineIndex !== undefined) {
-      const originalLine = lines[item.dataLineIndex];
-      const indentation = originalLine.match(/^(\s*)/)?.[0] || '';
+      const prefix = item.linePrefix || '';
       const escapedTranslation = escapeSpecialCharacters(translation);
-      lines[item.dataLineIndex] = `${indentation}string data = "${escapedTranslation}"`;
+      lines[item.dataLineIndex] = `${prefix}string data = "${escapedTranslation}"`;
       appliedCount++;
     }
   });
@@ -289,10 +290,9 @@ export function generateReversedContent(
     const translation = translationMap.get(item.term);
     if (translation && item.dataLineIndex !== undefined) {
       const rtlText = applyRTLFormatting(translation);
-      const originalLine = lines[item.dataLineIndex];
-      const indentation = originalLine.match(/^(\s*)/)?.[0] || '';
+      const prefix = item.linePrefix || '';
       const escapedText = escapeSpecialCharacters(rtlText);
-      lines[item.dataLineIndex] = `${indentation}string data = "${escapedText}"`;
+      lines[item.dataLineIndex] = `${prefix}string data = "${escapedText}"`;
     }
   });
 
