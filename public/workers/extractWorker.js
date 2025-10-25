@@ -153,83 +153,113 @@ function handleGenerateReversed(content, extractedData, translationsArray, reque
 }
 
 /**
- * Apply RTL formatting with Unicode presentation forms
- * Converts Persian/Arabic text to isolated forms and reverses only the text segments
- * Preserves punctuation and special characters in their original positions
+ * Apply proper RTL formatting for Persian/Arabic text
+ * This implementation uses a more sophisticated approach that handles:
+ * 1. Character shaping (presentation forms) based on context
+ * 2. Proper BiDi reordering
+ * 3. Preserving Latin characters and punctuation in correct positions
  */
 function applyRTLFormatting(text) {
-  // Normalize Arabic characters to Persian equivalents
-  const normalizedMap = {
-    'ك': 'ک',
-    'ي': 'ی',
-    'ة': 'ه',
-    'أ': 'ا',
-    'إ': 'ا',
-    'ؤ': 'و',
-  };
+  // Normalize Arabic characters to Persian
+  const normalized = text
+    .replace(/ك/g, 'ک')
+    .replace(/ي/g, 'ی')
+    .replace(/ة/g, 'ه')
+    .replace(/أ/g, 'ا')
+    .replace(/إ/g, 'ا')
+    .replace(/ؤ/g, 'و');
   
-  // Mapping Persian/Arabic characters to their Unicode isolated presentation forms
+  // Presentation forms mapping for contextual shaping
   const presentationForms = {
-    'ا': '\uFE8D', 'آ': '\uFE81', 'ب': '\uFE8F', 'پ': '\uFB56',
-    'ت': '\uFE95', 'ث': '\uFE99', 'ج': '\uFE9D', 'چ': '\uFB7A',
-    'ح': '\uFEA1', 'خ': '\uFEA5', 'د': '\uFEA9', 'ذ': '\uFEAB',
-    'ر': '\uFEAD', 'ز': '\uFEAF', 'ژ': '\uFB8A', 'س': '\uFEB1',
-    'ش': '\uFEB5', 'ص': '\uFEB9', 'ض': '\uFEBD', 'ط': '\uFEC1',
-    'ظ': '\uFEC5', 'ع': '\uFEC9', 'غ': '\uFECD', 'ف': '\uFED1',
-    'ق': '\uFED5', 'ک': '\uFED9', 'گ': '\uFB92', 'ل': '\uFEDD',
-    'م': '\uFEE1', 'ن': '\uFEE5', 'و': '\uFEED', 'ه': '\uFEEB',
-    'ی': '\uFEF1', 'ئ': '\uFE89',
+    // Isolated, Final, Initial, Medial
+    'ا': ['\uFE8D', '\uFE8E', '\uFE8D', '\uFE8D'],
+    'آ': ['\uFE81', '\uFE82', '\uFE81', '\uFE81'],
+    'ب': ['\uFE8F', '\uFE90', '\uFE91', '\uFE92'],
+    'پ': ['\uFB56', '\uFB57', '\uFB58', '\uFB59'],
+    'ت': ['\uFE95', '\uFE96', '\uFE97', '\uFE98'],
+    'ث': ['\uFE99', '\uFE9A', '\uFE9B', '\uFE9C'],
+    'ج': ['\uFE9D', '\uFE9E', '\uFE9F', '\uFEA0'],
+    'چ': ['\uFB7A', '\uFB7B', '\uFB7C', '\uFB7D'],
+    'ح': ['\uFEA1', '\uFEA2', '\uFEA3', '\uFEA4'],
+    'خ': ['\uFEA5', '\uFEA6', '\uFEA7', '\uFEA8'],
+    'د': ['\uFEA9', '\uFEAA', '\uFEA9', '\uFEA9'],
+    'ذ': ['\uFEAB', '\uFEAC', '\uFEAB', '\uFEAB'],
+    'ر': ['\uFEAD', '\uFEAE', '\uFEAD', '\uFEAD'],
+    'ز': ['\uFEAF', '\uFEB0', '\uFEAF', '\uFEAF'],
+    'ژ': ['\uFB8A', '\uFB8B', '\uFB8A', '\uFB8A'],
+    'س': ['\uFEB1', '\uFEB2', '\uFEB3', '\uFEB4'],
+    'ش': ['\uFEB5', '\uFEB6', '\uFEB7', '\uFEB8'],
+    'ص': ['\uFEB9', '\uFEBA', '\uFEBB', '\uFEBC'],
+    'ض': ['\uFEBD', '\uFEBE', '\uFEBF', '\uFEC0'],
+    'ط': ['\uFEC1', '\uFEC2', '\uFEC3', '\uFEC4'],
+    'ظ': ['\uFEC5', '\uFEC6', '\uFEC7', '\uFEC8'],
+    'ع': ['\uFEC9', '\uFECA', '\uFECB', '\uFECC'],
+    'غ': ['\uFECD', '\uFECE', '\uFECF', '\uFED0'],
+    'ف': ['\uFED1', '\uFED2', '\uFED3', '\uFED4'],
+    'ق': ['\uFED5', '\uFED6', '\uFED7', '\uFED8'],
+    'ک': ['\uFED9', '\uFEDA', '\uFEDB', '\uFEDC'],
+    'گ': ['\uFB92', '\uFB93', '\uFB94', '\uFB95'],
+    'ل': ['\uFEDD', '\uFEDE', '\uFEDF', '\uFEE0'],
+    'م': ['\uFEE1', '\uFEE2', '\uFEE3', '\uFEE4'],
+    'ن': ['\uFEE5', '\uFEE6', '\uFEE7', '\uFEE8'],
+    'و': ['\uFEED', '\uFEEE', '\uFEED', '\uFEED'],
+    'ه': ['\uFEEB', '\uFEEC', '\uFEED', '\uFEEE'],
+    'ی': ['\uFEF1', '\uFEF2', '\uFEF3', '\uFEF4'],
+    'ئ': ['\uFE89', '\uFE8A', '\uFE8B', '\uFE8C'],
   };
   
-  // First normalize the text
-  let normalized = text;
-  for (const [arabic, persian] of Object.entries(normalizedMap)) {
-    normalized = normalized.replace(new RegExp(arabic, 'g'), persian);
-  }
+  // Characters that don't connect to following character
+  const nonConnectors = new Set(['ا', 'آ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'و']);
   
-  // Convert ALL characters to presentation forms first
-  let withPresentationForms = '';
-  for (const char of normalized) {
-    if (presentationForms[char]) {
-      withPresentationForms += presentationForms[char];
-    } else {
-      withPresentationForms += char;
-    }
-  }
-  
-  // Now split into segments: Persian/Arabic letters vs other characters
-  const segments = [];
-  let currentSegment = '';
-  let isPersianSegment = false;
-  
-  for (const char of withPresentationForms) {
-    const isPersianChar = /[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char);
+  // Apply contextual shaping
+  const chars = Array.from(normalized);
+  const shaped = chars.map((char, i) => {
+    const forms = presentationForms[char];
+    if (!forms) return char;
     
-    if (currentSegment === '') {
-      currentSegment = char;
-      isPersianSegment = isPersianChar;
-    } else if (isPersianChar === isPersianSegment) {
-      currentSegment += char;
-    } else {
-      segments.push({ text: currentSegment, isPersian: isPersianSegment });
-      currentSegment = char;
-      isPersianSegment = isPersianChar;
-    }
-  }
-  
-  if (currentSegment) {
-    segments.push({ text: currentSegment, isPersian: isPersianSegment });
-  }
-  
-  // Process each segment: reverse only Persian segments
-  const processed = segments.map(segment => {
-    if (!segment.isPersian) {
-      return segment.text; // Keep non-Persian text as is (like * or spaces)
-    }
+    const prevChar = i > 0 ? chars[i - 1] : null;
+    const nextChar = i < chars.length - 1 ? chars[i + 1] : null;
     
-    // Reverse Persian segment (already in presentation forms)
-    return Array.from(segment.text).reverse().join('');
+    const prevConnects = prevChar && presentationForms[prevChar] && !nonConnectors.has(prevChar);
+    const nextConnects = nextChar && presentationForms[nextChar];
+    
+    // Determine form: 0=isolated, 1=final, 2=initial, 3=medial
+    let formIndex = 0;
+    if (prevConnects && nextConnects) formIndex = 3; // medial
+    else if (prevConnects) formIndex = 1; // final
+    else if (nextConnects) formIndex = 2; // initial
+    
+    return forms[formIndex];
   }).join('');
+  
+  // Split into RTL (Persian/Arabic) and LTR (Latin, numbers, etc.) segments
+  const segments = [];
+  let currentText = '';
+  let isRTL = false;
+  
+  for (const char of shaped) {
+    const charIsRTL = /[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char);
+    
+    if (currentText === '') {
+      currentText = char;
+      isRTL = charIsRTL;
+    } else if (charIsRTL === isRTL) {
+      currentText += char;
+    } else {
+      segments.push({ text: currentText, isRTL });
+      currentText = char;
+      isRTL = charIsRTL;
+    }
+  }
+  
+  if (currentText) {
+    segments.push({ text: currentText, isRTL });
+  }
+  
+  // Reverse RTL segments and reorder for visual display
+  const processed = segments.map(seg => 
+    seg.isRTL ? Array.from(seg.text).reverse().join('') : seg.text
+  ).join('');
   
   return processed;
 }
