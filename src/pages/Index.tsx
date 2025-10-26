@@ -13,12 +13,16 @@ import {
   parseTranslations,
   applyTranslations,
   generateReversedContent,
-  generateOutputFileName,
-  downloadFile,
-  exportToCSV,
   filterData,
   countTranslated,
-} from '@/utils/translationHelpers';
+} from '@/utils/extractionHelpers';
+import {
+  downloadFile,
+  generateOutputFileName,
+  exportToCSV,
+  exportToJSON,
+  exportToText,
+} from '@/utils/fileHelpers';
 import { CONFIG } from '@/config/constants';
 
 export default function Index() {
